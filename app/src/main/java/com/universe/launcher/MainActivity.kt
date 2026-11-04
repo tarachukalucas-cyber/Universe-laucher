@@ -51,6 +51,8 @@ class MainActivity : ComponentActivity() {
     private var mediaController: MediaController? = null
     private val tracks = mutableStateListOf<LocalTrack>()
     private var permissionGranted by mutableStateOf(false)
+    private var currentTrackTitle by mutableStateOf("")
+    private var isPlaying by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,7 +65,10 @@ class MainActivity : ComponentActivity() {
                     permissionGranted = permissionGranted,
                     onRequestPermission = { requestAudioPermission() },
                     onRefresh = { loadTracks() },
-                    onPlay = { track -> playTrack(track) }
+                    onPlay = { track -> playTrack(track) },
+                    currentTrackTitle = currentTrackTitle,
+                    isPlaying = isPlaying,
+                    onTogglePlayback = { togglePlayback() }
                 )
             }
         }
@@ -128,7 +133,7 @@ class MainActivity : ComponentActivity() {
         tracks.addAll(found)
     }
 
-    private fun playTrack(track: LocalTrack) {
+    private fun togglePlayback() {\n        val player = mediaController ?: return\n        if (player.isPlaying) { player.pause(); isPlaying = false }\n        else { player.play(); isPlaying = true }\n    }\n\n    private fun playTrack(track: LocalTrack) {
         val player = mediaController ?: return
         player.setMediaItem(MediaItem.fromUri(track.uri))
         player.prepare()
@@ -212,7 +217,7 @@ private fun UniverseHome(
                 }
             }
             Spacer(Modifier.height(12.dp))
-            Text("UNIVERSE LAUNCHER • ALPHA 0.2.0", color = Color(0xFF8294A9), fontSize = 9.sp, letterSpacing = 1.5.sp)
+            if (currentTrackTitle.isNotBlank()) {\n                Row(Modifier.fillMaxWidth().background(Color(0xCC101D30), RoundedCornerShape(12.dp)).clickable { onTogglePlayback() }.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {\n                    Icon(if (isPlaying) Icons.Default.GraphicEq else Icons.Default.PlayArrow, contentDescription = null, tint = NebulaCyan)\n                    Spacer(Modifier.width(10.dp))\n                    Text(currentTrackTitle, color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f), maxLines = 1)\n                    Text(if (isPlaying) "PAUSAR" else "CONTINUAR", color = NebulaCyan, fontSize = 10.sp)\n                }\n                Spacer(Modifier.height(8.dp))\n            }\n            Text("UNIVERSE LAUNCHER • ALPHA 0.2.0", color = Color(0xFF8294A9), fontSize = 9.sp, letterSpacing = 1.5.sp)
         }
     }
 }
