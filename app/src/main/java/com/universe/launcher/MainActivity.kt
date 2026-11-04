@@ -1,132 +1,218 @@
 package com.universe.launcher
 
+import android.Manifest
+import android.content.ComponentName
+import android.content.Context
+import android.content.pm.PackageManager
+import android.database.Cursor
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.MediaStore
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Canvas
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.GraphicEq
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.media3.common.MediaItem
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
+import com.google.common.util.concurrent.ListenableFuture
 
 private val SpaceBlack = Color(0xFF050812)
 private val NebulaBlue = Color(0xFF174B78)
 private val NebulaCyan = Color(0xFF42D6D0)
 private val NebulaViolet = Color(0xFF7653A6)
 
+data class LocalTrack(val title: String, val artist: String, val uri: Uri)
+
 class MainActivity : ComponentActivity() {
+    private var controllerFuture: ListenableFuture<MediaController>? = null
+    private var mediaController: MediaController? = null
+    private val tracks = mutableStateListOf<LocalTrack>()
+    private var permissionGranted by mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { MaterialTheme { UniverseHome() } }
+        permissionGranted = hasAudioPermission()
+        if (permissionGranted) loadTracks()
+        setContent {
+            MaterialTheme {
+                UniverseHome(
+                    tracks = tracks,
+                    permissionGranted = permissionGranted,
+                    onRequestPermission = { requestAudioPermission() },
+                    onRefresh = { loadTracks() },
+                    onPlay = { track -> playTrack(track) }
+                )
+            }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val token = SessionToken(this, ComponentName(this, MusicPlaybackService::class.java))
+        controllerFuture = MediaController.Builder(this, token).buildAsync()
+        controllerFuture?.addListener({
+            try { mediaController = controllerFuture?.get() } catch (_: Exception) { }
+        }, ContextCompat.getMainExecutor(this))
+    }
+
+    override fun onStop() {
+        mediaController = null
+        controllerFuture?.let { MediaController.releaseFuture(it) }
+        controllerFuture = null
+        super.onStop()
+    }
+
+    private fun requiredAudioPermission(): String =
+        if (Build.VERSION.SDK_INT >= 33) Manifest.permission.READ_MEDIA_AUDIO
+        else Manifest.permission.READ_EXTERNAL_STORAGE
+
+    private fun hasAudioPermission() =
+        ContextCompat.checkSelfPermission(this, requiredAudioPermission()) == PackageManager.PERMISSION_GRANTED
+
+    private fun requestAudioPermission() {
+        registerPermissionLauncher.launch(requiredAudioPermission())
+    }
+
+    private val registerPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            permissionGranted = granted
+            if (granted) loadTracks()
+        }
+
+    private fun loadTracks() {
+        if (!hasAudioPermission()) return
+        val found = mutableListOf<LocalTrack>()
+        val collection = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+        val projection = arrayOf(
+            MediaStore.Audio.Media._ID,
+            MediaStore.Audio.Media.TITLE,
+            MediaStore.Audio.Media.ARTIST
+        )
+        val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
+        val sortOrder = "${MediaStore.Audio.Media.TITLE} COLLATE NOCASE ASC"
+        contentResolver.query(collection, projection, selection, null, sortOrder)?.use { cursor ->
+            val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
+            val titleColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
+            val artistColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
+            while (cursor.moveToNext()) {
+                val id = cursor.getLong(idColumn)
+                val title = cursor.getString(titleColumn) ?: "Faixa sem título"
+                val artist = cursor.getString(artistColumn) ?: "Artista desconhecido"
+                found += LocalTrack(title, artist, Uri.withAppendedPath(collection, id.toString()))
+            }
+        }
+        tracks.clear()
+        tracks.addAll(found)
+    }
+
+    private fun playTrack(track: LocalTrack) {
+        val player = mediaController ?: return
+        player.setMediaItem(MediaItem.fromUri(track.uri))
+        player.prepare()
+        player.play()
     }
 }
 
 @Composable
-private fun UniverseHome() {
+private fun UniverseHome(
+    tracks: List<LocalTrack>,
+    permissionGranted: Boolean,
+    onRequestPermission: () -> Unit,
+    onRefresh: () -> Unit,
+    onPlay: (LocalTrack) -> Unit
+) {
     Box(
         Modifier.fillMaxSize().background(
             Brush.verticalGradient(listOf(SpaceBlack, Color(0xFF0A1728), Color(0xFF090B18)))
         )
     ) {
-        StarField(Modifier.fillMaxSize())
-        Column(
-            Modifier.fillMaxSize().padding(horizontal = 22.dp, vertical = 28.dp),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 24.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
                     Text("UNIVERSE", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
-                    Spacer(Modifier.weight(1f))
-                    Icon(Icons.Default.Settings, contentDescription = "Configurações", tint = NebulaCyan)
+                    Text("MINECRAFT JAVA • ANDROID", color = NebulaCyan, fontSize = 10.sp, letterSpacing = 2.sp)
                 }
-                Text("MINECRAFT JAVA • ANDROID", color = NebulaCyan, fontSize = 10.sp, letterSpacing = 2.sp)
+                Icon(Icons.Default.GraphicEq, contentDescription = "Universe Music", tint = NebulaCyan)
             }
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text("Sua próxima\naventura começa aqui.", color = Color.White, fontSize = 31.sp, lineHeight = 37.sp, fontWeight = FontWeight.Bold)
-                Text("Uma nova experiência para jogar Minecraft Java no celular.", color = Color(0xFFB7C6D8), fontSize = 14.sp)
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xCC101D30)),
-                    shape = RoundedCornerShape(22.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(Modifier.padding(18.dp)) {
-                        Text("PERFIL DE JOGO", color = NebulaCyan, fontSize = 10.sp, letterSpacing = 2.sp)
+            Spacer(Modifier.height(24.dp))
+            Text("Sua aventura começa aqui.", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.Bold)
+            Text("Launcher espacial para Minecraft Java.", color = Color(0xFFB7C6D8), fontSize = 13.sp)
+            Spacer(Modifier.height(24.dp))
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color(0xCC101D30)),
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth().weight(1f)
+            ) {
+                Column(Modifier.fillMaxSize().padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.MusicNote, contentDescription = null, tint = NebulaCyan)
+                        Spacer(Modifier.width(8.dp))
+                        Text("MÚSICAS DO DISPOSITIVO", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.weight(1f))
+                        IconButton(onClick = onRefresh) {
+                            Icon(Icons.Default.Refresh, contentDescription = "Atualizar biblioteca", tint = NebulaCyan)
+                        }
+                    }
+                    Text(
+                        "Encontre e toque arquivos de áudio locais. A reprodução continua em segundo plano enquanto você usa outros apps.",
+                        color = Color(0xFFB7C6D8), fontSize = 11.sp
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    if (!permissionGranted) {
+                        Text("Permita o acesso a músicas e áudios para listar os arquivos do dispositivo.", color = Color.White, fontSize = 13.sp)
                         Spacer(Modifier.height(8.dp))
-                        Text("Nenhuma versão selecionada", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
-                        Text("A integração do motor Minecraft será adicionada nas próximas etapas.", color = Color(0xFFB7C6D8), fontSize = 12.sp)
-                        Spacer(Modifier.height(16.dp))
-                        Button(
-                            onClick = {},
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = NebulaBlue),
-                            shape = RoundedCornerShape(14.dp)
-                        ) { Text("Preparar jogo", color = Color.White) }
+                        Button(onClick = onRequestPermission, colors = ButtonDefaults.buttonColors(containerColor = NebulaBlue)) {
+                            Text("Encontrar minhas músicas")
+                        }
+                    } else if (tracks.isEmpty()) {
+                        Text("Nenhuma música encontrada. Baixe arquivos de áudio ou atualize a biblioteca.", color = Color(0xFFB7C6D8), fontSize = 13.sp)
+                    } else {
+                        Text("${tracks.size} faixa(s) encontrada(s)", color = NebulaCyan, fontSize = 11.sp)
+                        Spacer(Modifier.height(8.dp))
+                        LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            items(tracks) { track ->
+                                Row(
+                                    Modifier.fillMaxWidth().background(Color(0x8825364B), RoundedCornerShape(12.dp))
+                                        .clickable { onPlay(track) }.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Default.MusicNote, contentDescription = null, tint = NebulaCyan)
+                                    Spacer(Modifier.width(10.dp))
+                                    Column(Modifier.weight(1f)) {
+                                        Text(track.title, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                                        Text(track.artist, color = Color(0xFFB7C6D8), fontSize = 11.sp, maxLines = 1)
+                                    }
+                                    Icon(Icons.Default.PlayArrow, contentDescription = "Reproduzir", tint = NebulaCyan)
+                                }
+                            }
+                        }
                     }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                    FeatureTile("Contas", Icons.Default.AccountCircle, Modifier.weight(1f))
-                    FeatureTile("Arquivos", Icons.Default.Storage, Modifier.weight(1f))
-                    FeatureTile("Música", Icons.Default.GraphicEq, Modifier.weight(1f))
-                }
             }
-            Text("UNIVERSE LAUNCHER  •  ALPHA 0.1.0", color = Color(0xFF8294A9), fontSize = 9.sp, letterSpacing = 1.5.sp)
+            Spacer(Modifier.height(12.dp))
+            Text("UNIVERSE LAUNCHER • ALPHA 0.2.0", color = Color(0xFF8294A9), fontSize = 9.sp, letterSpacing = 1.5.sp)
         }
-    }
-}
-
-@Composable
-private fun FeatureTile(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier = Modifier) {
-    Card(modifier.height(82.dp), colors = CardDefaults.cardColors(containerColor = Color(0xB817263B)), shape = RoundedCornerShape(16.dp)) {
-        Column(
-            Modifier.fillMaxSize().padding(10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(icon, contentDescription = label, tint = NebulaCyan, modifier = Modifier.size(23.dp))
-            Spacer(Modifier.height(5.dp))
-            Text(label, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Medium)
-        }
-    }
-}
-
-@Composable
-private fun StarField(modifier: Modifier = Modifier) {
-    Canvas(modifier) {
-        val stars = listOf(
-            Offset(.08f, .12f), Offset(.22f, .25f), Offset(.81f, .13f), Offset(.92f, .31f),
-            Offset(.68f, .39f), Offset(.12f, .56f), Offset(.89f, .66f), Offset(.37f, .73f),
-            Offset(.56f, .84f), Offset(.18f, .91f), Offset(.76f, .94f), Offset(.47f, .18f)
-        )
-        stars.forEachIndexed { index, point ->
-            drawCircle(
-                color = if (index % 3 == 0) NebulaCyan.copy(alpha = .8f) else Color.White.copy(alpha = .65f),
-                radius = if (index % 4 == 0) 2.2.dp.toPx() else 1.1.dp.toPx(),
-                center = Offset(point.x * size.width, point.y * size.height)
-            )
-        }
-        drawCircle(
-            brush = Brush.radialGradient(listOf(NebulaBlue.copy(alpha = .22f), Color.Transparent)),
-            radius = size.minDimension * .58f,
-            center = Offset(size.width * .88f, size.height * .34f)
-        )
-        drawCircle(
-            brush = Brush.radialGradient(listOf(NebulaViolet.copy(alpha = .16f), Color.Transparent)),
-            radius = size.minDimension * .48f,
-            center = Offset(size.width * .05f, size.height * .72f)
-        )
     }
 }
