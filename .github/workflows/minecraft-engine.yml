@@ -39,6 +39,8 @@ jobs:
           sed -i 's/minorApiLevel = 2/minorApiLevel = 0/' engine/ZalithLauncher2/ZalithLauncher/build.gradle.kts
       - name: Set up Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust Android targets
+        run: rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
       - name: Install cargo-ndk
         run: cargo install cargo-ndk --locked
       - name: Configure Universe branding
