@@ -111,7 +111,7 @@ class MainActivity : ComponentActivity() {
             MediaStore.Audio.Media.TITLE,
             MediaStore.Audio.Media.ARTIST
         )
-        val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
+        val selection: String? = null
         val sortOrder = "${MediaStore.Audio.Media.TITLE} COLLATE NOCASE ASC"
         contentResolver.query(collection, projection, selection, null, sortOrder)?.use { cursor ->
             val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
