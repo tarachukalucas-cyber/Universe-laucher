@@ -1,75 +1,70 @@
 # Universe Launcher
 
-An independent Android project for Minecraft: Java Edition, with an original space-inspired interface.
+Independent Android launcher project for Minecraft: Java Edition, with a custom Universe identity.
 
-> **Current status: alpha 0.2.0.** The repository now contains an Android/Compose app foundation and a local audio library with background playback. The Minecraft Java runtime is **not integrated yet**, so this build is not yet able to install or launch Minecraft.
+> **Development status: engine integration in progress.** The original Compose/audio foundation remains available. A separate CI workflow now builds a pinned upstream Minecraft Java launcher engine as an ARM64 debug APK, branded as Universe Launcher. This is an integration build, not yet a merged or device-tested release.
 
 ## Project identity
 
-- **Name:** Universe Launcher
-- **Platform:** Android
-- **Language/UI:** Kotlin + Jetpack Compose
-- **Minimum Android:** 8.0 (API 26)
-- **Application ID:** `com.universe.launcher`
-- **Visual direction:** space black, nebula blue/cyan and subtle violet accents
-- **Version:** `0.2.0-alpha`
+- Name: Universe Launcher
+- Platform: Android
+- Application identity for the original foundation: `com.universe.launcher`
+- Visual direction: space black, nebula blue/cyan and violet
+- Current integration target: ARM64 Android devices
 
-## Implemented
+## Existing Universe foundation
 
-- Android Gradle application module and Compose UI.
-- Custom Universe home screen and navigation foundation.
-- Local audio discovery through Android MediaStore, with runtime permission handling.
-- Playback through AndroidX Media3 in a MediaSessionService, allowing audio to continue while the user switches apps or uses a game in the foreground (subject to Android background-execution rules).
-- Refreshable audio library listing indexed audio files from shared device storage.
-- GitHub Actions workflow to build and upload a debug APK artifact.
+- Kotlin and Jetpack Compose app foundation.
+- Custom Universe home screen and visual identity.
+- Local audio discovery through Android MediaStore.
+- Background audio playback using AndroidX Media3.
+- Separate debug APK workflow for the original foundation.
 
-## Not implemented yet
+## Minecraft Java engine integration
 
-- Minecraft Java runtime / launch engine.
-- Microsoft account authentication and profile management.
-- Minecraft version installation and per-version configuration.
-- Fabric, Forge, NeoForge and Quilt installation.
-- Renderer selection and device-specific graphics compatibility.
-- Skin management, server list and multiplayer integrations.
-- In-game overlay or direct controls for the music player while Minecraft is running.
+The new workflow `.github/workflows/minecraft-engine.yml` checks out a **pinned** revision of [Zalith Launcher 2](https://github.com/ZalithLauncher/ZalithLauncher2) and builds its Android launcher module for ARM64. Zalith Launcher 2 documents that it uses the PojavLauncher engine and includes the Java runtime, Minecraft launching, Microsoft account flow and version management components.
 
-## Upstream engineering references
+- Upstream revision: `9546e84b5174cef6d7062322fb33ed442bac3b90`
+- Build task: `:ZalithLauncher:assembleDebug`
+- Output: GitHub Actions artifact `UniverseLauncher-MinecraftJava-arm64-debug`
+- Branding values: Universe Launcher, app label includes “Unofficial Modified Version”.
+- Gradle: 9.5.0; Java 17; Android NDK 25.2.9519653.
 
-These projects are being evaluated as upstream implementation references:
+**Authentication configuration:** Microsoft sign-in depends on an OAuth application/client ID. The workflow reads the optional GitHub Actions secret `MICROSOFT_OAUTH_CLIENT_ID`. Without a valid client ID and matching provider configuration, Microsoft online sign-in is not ready, even if the launcher UI and authentication code compile. Never put account passwords or access tokens in source code or GitHub commits.
 
-- [Zalith Launcher 2](https://github.com/ZalithLauncher/ZalithLauncher2) — GPL-3.0 with additional conditions under GPLv3 §7. Any distributed modified version must use a clearly distinct name, must not include “ZalithLauncher” or “ZL” in its name, must visibly identify itself as an unofficial modified version on the launch/main screen, and must preserve copyright notices.
-- [Cubiq Launcher](https://github.com/VivxKumar07/Cubiq-Launcher) — GPL-3.0.
-- [Amethyst Android](https://github.com/AngelAuraMC/Amethyst-Android) — LGPLv3; Android launcher/runtime lineage related to PojavLauncher.
+**What this integration does not claim yet:** the upstream engine build is not the same as a fully merged Universe application. The original Universe home screen, local music UI, custom branding assets and in-game music controls have not yet been ported into the engine application. The produced APK must be installed and tested on a real ARM64 Android device before it can be called release-ready.
 
-No complete upstream launcher engine has been copied into this repository yet. The next integration step is to select and port a compatible engine, preserving its complete license notices, source code and modification obligations. This repository is not affiliated with Mojang or Microsoft.
+## License and upstream notices
 
-## Build
+Zalith Launcher 2 is licensed under GPL-3.0 and includes additional conditions under GPLv3 §7. Modified distributions must use a clearly distinct name, must not include “ZalithLauncher” or “ZL” in their name, must visibly identify themselves as an unofficial modified version on the startup/main screen, and must preserve copyright notices. Its source and license remain available at the upstream repository linked above.
 
-The GitHub Actions workflow at `.github/workflows/android-debug.yml` builds the debug APK when code is pushed to the development branch, when a pull request targets `main`, or when manually started from Actions.
+The integration workflow pins upstream source rather than copying its implementation into this repository. Any future distribution of a combined modified work must include the corresponding complete source and all applicable license notices and comply with the upstream additional terms. Universe Launcher is not affiliated with or endorsed by Mojang or Microsoft.
 
-The workflow uses Java 17 and Gradle 8.10.2:
+Other references:
+- [Cubiq Launcher](https://github.com/VivxKumar07/Cubiq-Launcher)
+- [Amethyst Android](https://github.com/AngelAuraMC/Amethyst-Android)
+
+## Build the original Universe foundation
 
 ```bash
 gradle :app:assembleDebug
 ```
 
-Expected output:
+Expected output: `app/build/outputs/apk/debug/app-debug.apk`.
 
-```
-app/build/outputs/apk/debug/app-debug.apk
-```
+## Run the Minecraft engine integration build
 
-The CI workflow installs Gradle directly; a Gradle wrapper has not yet been added.
+Open GitHub Actions in this repository and run **Universe Minecraft engine APK**, or push changes to `feat/minecraft-engine-zalith-integration`. The workflow uploads an ARM64 debug APK artifact. It does not publish a release automatically.
 
-## Planned development
+## Remaining integration work
 
-1. Validate the Android build and test audio playback on a physical ARM64 phone.
-2. Integrate a Java runtime and Minecraft launch engine.
-3. Add account sign-in, game versions, mod loaders and renderer selection.
-4. Add skin, server and multiplayer tools.
-5. Add music playback controls that remain accessible while Minecraft is foregrounded.
-6. Add device-specific performance profiles and crash diagnostics.
+1. Port the Universe home screen, theme and audio player into the engine app without removing upstream legal notices.
+2. Configure and test Microsoft OAuth using a properly registered client ID.
+3. Verify version discovery, download, installation, Java runtime selection and game launch on an ARM64 phone.
+4. Test graphics/renderers and device compatibility.
+5. Add in-game music controls and test audio/game lifecycle behavior.
+6. Publish only after a real-device test and a complete source/license bundle are available.
 
 ## Disclaimer
 
-Universe Launcher is an independent, unofficial community project. Minecraft is a trademark of its respective owners. This project is not affiliated with or endorsed by Mojang or Microsoft.
+Minecraft is a trademark of its respective owners. Universe Launcher is an independent, unofficial project and is not affiliated with or endorsed by Mojang or Microsoft.
