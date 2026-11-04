@@ -37,6 +37,10 @@ jobs:
           # requests minor API level 2, but its source does not require those extension APIs.
           # Compile against the available API 37.0 platform for reproducible CI builds.
           sed -i 's/minorApiLevel = 2/minorApiLevel = 0/' engine/ZalithLauncher2/ZalithLauncher/build.gradle.kts
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk --locked
       - name: Configure Universe branding
         working-directory: engine/ZalithLauncher2
         env:
@@ -57,6 +61,9 @@ jobs:
           gradle-version: '9.5.0'
       - name: Build Minecraft Java launcher
         working-directory: engine/ZalithLauncher2
+        env:
+          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/25.2.9519653
+          ANDROID_NDK_ROOT: ${{ env.ANDROID_HOME }}/ndk/25.2.9519653
         run: gradle :ZalithLauncher:assembleDebug -Parch=arm64
       - name: Upload Universe APK
         uses: actions/upload-artifact@v4
