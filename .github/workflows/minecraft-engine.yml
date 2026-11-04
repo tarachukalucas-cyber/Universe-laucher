@@ -27,19 +27,16 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Locate and configure preinstalled Android SDK
+      - name: Install Android SDK packages
         run: |
-          test -d "$ANDROID_HOME"
-          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager 2>/dev/null | sort -V | tail -n 1)"
-          if [ -z "$SDKMANAGER" ]; then
-            echo "Android sdkmanager was not found under $ANDROID_HOME/cmdline-tools"
-            exit 1
-          fi
-          echo "Using $SDKMANAGER"
-          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
-          "$SDKMANAGER" --install "platforms;android-37" "build-tools;35.0.0" "ndk;25.2.9519653"
+          "$SDKMANAGER" --install "platforms;android-37.0" "build-tools;35.0.0" "ndk;25.2.9519653" "platform-tools"
+          # Android publishes API 37 as android-37.0; this pinned upstream revision
+          # requests minor API level 2, but its source does not require those extension APIs.
+          # Compile against the available API 37.0 platform for reproducible CI builds.
+          sed -i 's/minorApiLevel = 2/minorApiLevel = 0/' engine/ZalithLauncher2/ZalithLauncher/build.gradle.kts
       - name: Configure Universe branding
         working-directory: engine/ZalithLauncher2
         env:
