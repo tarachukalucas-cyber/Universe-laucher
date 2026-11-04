@@ -138,6 +138,8 @@ class MainActivity : ComponentActivity() {
         player.setMediaItem(MediaItem.fromUri(track.uri))
         player.prepare()
         player.play()
+        currentTrackTitle = track.title
+        isPlaying = true
     }
 }
 
@@ -147,7 +149,10 @@ private fun UniverseHome(
     permissionGranted: Boolean,
     onRequestPermission: () -> Unit,
     onRefresh: () -> Unit,
-    onPlay: (LocalTrack) -> Unit
+    onPlay: (LocalTrack) -> Unit,
+    currentTrackTitle: String,
+    isPlaying: Boolean,
+    onTogglePlayback: () -> Unit
 ) {
     Box(
         Modifier.fillMaxSize().background(
