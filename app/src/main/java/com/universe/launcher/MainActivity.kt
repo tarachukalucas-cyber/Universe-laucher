@@ -133,7 +133,13 @@ class MainActivity : ComponentActivity() {
         tracks.addAll(found)
     }
 
-    private fun togglePlayback() {\n        val player = mediaController ?: return\n        if (player.isPlaying) { player.pause(); isPlaying = false }\n        else { player.play(); isPlaying = true }\n    }\n\n    private fun playTrack(track: LocalTrack) {
+    private fun togglePlayback() {
+        val player = mediaController ?: return
+        if (player.isPlaying) { player.pause(); isPlaying = false }
+        else { player.play(); isPlaying = true }
+    }
+
+    private fun playTrack(track: LocalTrack) {
         val player = mediaController ?: return
         player.setMediaItem(MediaItem.fromUri(track.uri))
         player.prepare()
@@ -222,7 +228,16 @@ private fun UniverseHome(
                 }
             }
             Spacer(Modifier.height(12.dp))
-            if (currentTrackTitle.isNotBlank()) {\n                Row(Modifier.fillMaxWidth().background(Color(0xCC101D30), RoundedCornerShape(12.dp)).clickable { onTogglePlayback() }.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {\n                    Icon(if (isPlaying) Icons.Default.GraphicEq else Icons.Default.PlayArrow, contentDescription = null, tint = NebulaCyan)\n                    Spacer(Modifier.width(10.dp))\n                    Text(currentTrackTitle, color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f), maxLines = 1)\n                    Text(if (isPlaying) "PAUSAR" else "CONTINUAR", color = NebulaCyan, fontSize = 10.sp)\n                }\n                Spacer(Modifier.height(8.dp))\n            }\n            Text("UNIVERSE LAUNCHER • ALPHA 0.2.0", color = Color(0xFF8294A9), fontSize = 9.sp, letterSpacing = 1.5.sp)
+            if (currentTrackTitle.isNotBlank()) {
+                Row(Modifier.fillMaxWidth().background(Color(0xCC101D30), RoundedCornerShape(12.dp)).clickable { onTogglePlayback() }.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(if (isPlaying) Icons.Default.GraphicEq else Icons.Default.PlayArrow, contentDescription = null, tint = NebulaCyan)
+                    Spacer(Modifier.width(10.dp))
+                    Text(currentTrackTitle, color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f), maxLines = 1)
+                    Text(if (isPlaying) "PAUSAR" else "CONTINUAR", color = NebulaCyan, fontSize = 10.sp)
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+            Text("UNIVERSE LAUNCHER • ALPHA 0.2.0", color = Color(0xFF8294A9), fontSize = 9.sp, letterSpacing = 1.5.sp)
         }
     }
 }
