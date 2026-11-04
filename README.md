@@ -1,40 +1,51 @@
 # Universe Launcher
 
-A new Android launcher project for Minecraft: Java Edition, with an original space-inspired interface.
+An independent Android project for Minecraft: Java Edition, with an original space-inspired interface.
 
-> **Current status: foundation / alpha 0.1.0.** This branch introduces the Android Gradle project and the first Compose home screen. It is not yet a functional Minecraft launcher and does not yet include the game runtime, account authentication, version installation, mods, renderers, or in-game music playback.
+> **Current status: alpha 0.2.0.** The repository now contains an Android/Compose app foundation and a local audio library with background playback. The Minecraft Java runtime is **not integrated yet**, so this build is not yet able to install or launch Minecraft.
 
-## Project direction
+## Project identity
 
 - **Name:** Universe Launcher
 - **Platform:** Android
 - **Language/UI:** Kotlin + Jetpack Compose
-- **Minimum Android version:** Android 8.0 (API 26)
-- **Initial application ID:** `com.universe.launcher`
-- **Visual direction:** deep space black, nebula blue/cyan and subtle violet accents
-- **Current version:** `0.1.0-alpha`
+- **Minimum Android:** 8.0 (API 26)
+- **Application ID:** `com.universe.launcher`
+- **Visual direction:** space black, nebula blue/cyan and subtle violet accents
+- **Version:** `0.2.0-alpha`
 
-## Current implementation
+## Implemented
 
-- Android application module and Gradle configuration.
-- Compose-based home screen with a custom procedural starfield background.
-- Initial navigation tiles for Accounts, Files and Music (visual placeholders only).
+- Android Gradle application module and Compose UI.
+- Custom Universe home screen and navigation foundation.
+- Local audio discovery through Android MediaStore, with runtime permission handling.
+- Playback through AndroidX Media3 in a MediaSessionService, allowing audio to continue while the user switches apps or uses a game in the foreground (subject to Android background-execution rules).
+- Refreshable audio library listing indexed audio files from shared device storage.
 - GitHub Actions workflow to build and upload a debug APK artifact.
 
-## Planned development stages
+## Not implemented yet
 
-1. Establish a reproducible Android build and validate it on a real ARM64 device.
-2. Integrate a Minecraft Java runtime/launcher engine from a compatible upstream project, preserving all required license notices and source-distribution obligations.
-3. Add version installation and management, Java runtime selection, memory settings and renderer selection.
-4. Add Microsoft account sign-in using the supported authentication flow, plus profile/skin management.
-5. Add mod-loader and content management for compatible Fabric/Forge/NeoForge versions.
-6. Add local music library access using Android's Storage Access Framework and an audio playback service.
-7. Add server list, multiplayer connection support and performance diagnostics.
-8. Replace the procedural placeholder background with the approved Universe artwork when its image asset is added to the repository.
+- Minecraft Java runtime / launch engine.
+- Microsoft account authentication and profile management.
+- Minecraft version installation and per-version configuration.
+- Fabric, Forge, NeoForge and Quilt installation.
+- Renderer selection and device-specific graphics compatibility.
+- Skin management, server list and multiplayer integrations.
+- In-game overlay or direct controls for the music player while Minecraft is running.
+
+## Upstream engineering references
+
+These projects are being evaluated as upstream implementation references:
+
+- [Zalith Launcher 2](https://github.com/ZalithLauncher/ZalithLauncher2) — GPL-3.0 with additional conditions under GPLv3 §7. Any distributed modified version must use a clearly distinct name, must not include “ZalithLauncher” or “ZL” in its name, must visibly identify itself as an unofficial modified version on the launch/main screen, and must preserve copyright notices.
+- [Cubiq Launcher](https://github.com/VivxKumar07/Cubiq-Launcher) — GPL-3.0.
+- [Amethyst Android](https://github.com/AngelAuraMC/Amethyst-Android) — LGPLv3; Android launcher/runtime lineage related to PojavLauncher.
+
+No complete upstream launcher engine has been copied into this repository yet. The next integration step is to select and port a compatible engine, preserving its complete license notices, source code and modification obligations. This repository is not affiliated with Mojang or Microsoft.
 
 ## Build
 
-The GitHub Actions workflow at `.github/workflows/android-debug.yml` builds the debug APK on pushes to the configured branches or when manually started from the Actions tab.
+The GitHub Actions workflow at `.github/workflows/android-debug.yml` builds the debug APK when code is pushed to the development branch, when a pull request targets `main`, or when manually started from Actions.
 
 The workflow uses Java 17 and Gradle 8.10.2:
 
@@ -48,19 +59,16 @@ Expected output:
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
-This initial scaffold does not include a Gradle wrapper yet. The CI workflow installs the specified Gradle version directly.
+The CI workflow installs Gradle directly; a Gradle wrapper has not yet been added.
 
-## Upstream projects and licensing
+## Planned development
 
-Potential upstream references include:
-
-- [Zalith Launcher 2](https://github.com/ZalithLauncher/ZalithLauncher2)
-- [Cubiq Launcher](https://github.com/VivxKumar07/Cubiq-Launcher)
-- [Amethyst Android](https://github.com/AngelAuraMC/Amethyst-Android)
-
-No upstream source code has been copied into this initial scaffold. Before integrating any upstream implementation, its exact license, notices, additional conditions, trademarks and source-distribution requirements must be reviewed and preserved. In particular, a modified Zalith-based distribution must follow the upstream repository's additional GPL conditions and must not be presented as the official Zalith Launcher.
-
-The existing `RVCLapk1.0.md` file refers to original Cryogenic Launcher materials; it is retained as historical repository documentation and does not grant rights to third-party code or assets.
+1. Validate the Android build and test audio playback on a physical ARM64 phone.
+2. Integrate a Java runtime and Minecraft launch engine.
+3. Add account sign-in, game versions, mod loaders and renderer selection.
+4. Add skin, server and multiplayer tools.
+5. Add music playback controls that remain accessible while Minecraft is foregrounded.
+6. Add device-specific performance profiles and crash diagnostics.
 
 ## Disclaimer
 
