@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feat/universe-android-foundation
+      - feat/minecraft-engine-zalith-integration
   pull_request:
     branches:
       - main
