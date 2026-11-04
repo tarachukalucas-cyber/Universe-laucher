@@ -38,6 +38,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
+import java.io.File
 
 private val SpaceBlack = Color(0xFF050812)
 private val NebulaBlue = Color(0xFF174B78)
@@ -109,28 +110,61 @@ class MainActivity : ComponentActivity() {
 
     private fun loadTracks() {
         if (!hasAudioPermission()) return
-        val found = mutableListOf<LocalTrack>()
-        val collection = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
-        val projection = arrayOf(
-            MediaStore.Audio.Media._ID,
-            MediaStore.Audio.Media.TITLE,
-            MediaStore.Audio.Media.ARTIST
-        )
-        val selection: String? = null
-        val sortOrder = "${MediaStore.Audio.Media.TITLE} COLLATE NOCASE ASC"
-        contentResolver.query(collection, projection, selection, null, sortOrder)?.use { cursor ->
-            val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
-            val titleColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
-            val artistColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
-            while (cursor.moveToNext()) {
-                val id = cursor.getLong(idColumn)
-                val title = cursor.getString(titleColumn) ?: "Faixa sem título"
-                val artist = cursor.getString(artistColumn) ?: "Artista desconhecido"
-                found += LocalTrack(title, artist, Uri.withAppendedPath(collection, id.toString()))
+
+        // A importação roda fora da thread principal para evitar travamentos na abertura.
+        Thread {
+            val found = mutableListOf<LocalTrack>()
+            val collection = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+            val musicDirectory = File(filesDir, "music").apply { mkdirs() }
+            val projection = arrayOf(
+                MediaStore.Audio.Media._ID,
+                MediaStore.Audio.Media.TITLE,
+                MediaStore.Audio.Media.ARTIST,
+                MediaStore.Audio.Media.DISPLAY_NAME,
+                MediaStore.Audio.Media.SIZE
+            )
+            val sortOrder = "${MediaStore.Audio.Media.TITLE} COLLATE NOCASE ASC"
+
+            contentResolver.query(collection, projection, null, null, sortOrder)?.use { cursor ->
+                val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
+                val titleColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
+                val artistColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
+                val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DISPLAY_NAME)
+                val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE)
+
+                while (cursor.moveToNext()) {
+                    val id = cursor.getLong(idColumn)
+                    val title = cursor.getString(titleColumn) ?: "Faixa sem título"
+                    val artist = cursor.getString(artistColumn) ?: "Artista desconhecido"
+                    val displayName = cursor.getString(nameColumn) ?: "audio_$id.mp3"
+                    val expectedSize = cursor.getLong(sizeColumn).coerceAtLeast(0L)
+                    val extension = displayName.substringAfterLast('.', "mp3")
+                        .lowercase().filter { it.isLetterOrDigit() }.take(8).ifBlank { "mp3" }
+                    val safeTitle = title.replace(Regex("[^A-Za-z0-9._-]"), "_").take(48).ifBlank { "track" }
+                    val destination = File(musicDirectory, "${id}_${safeTitle}.$extension")
+                    val sourceUri = Uri.withAppendedPath(collection, id.toString())
+
+                    try {
+                        // Não copia novamente arquivos que já estão sincronizados.
+                        if (!destination.exists() || (expectedSize > 0L && destination.length() != expectedSize)) {
+                            contentResolver.openInputStream(sourceUri)?.use { input ->
+                                destination.outputStream().use { output -> input.copyTo(output) }
+                            }
+                        }
+                        if (destination.exists() && destination.length() > 0L) {
+                            found += LocalTrack(title, artist, Uri.fromFile(destination))
+                        }
+                    } catch (_: Exception) {
+                        // Um arquivo indisponível não impede a importação das outras músicas.
+                    }
+                }
             }
-        }
-        tracks.clear()
-        tracks.addAll(found)
+
+            runOnUiThread {
+                tracks.clear()
+                tracks.addAll(found)
+            }
+        }.start()
     }
 
     private fun togglePlayback() {
@@ -192,7 +226,7 @@ private fun UniverseHome(
                         }
                     }
                     Text(
-                        "Encontre e toque arquivos de áudio locais. A reprodução continua em segundo plano enquanto você usa outros apps.",
+                        "Ao abrir o launcher, suas músicas locais são importadas automaticamente para a biblioteca. A reprodução continua em segundo plano.",
                         color = Color(0xFFB7C6D8), fontSize = 11.sp
                     )
                     Spacer(Modifier.height(12.dp))
@@ -203,9 +237,9 @@ private fun UniverseHome(
                             Text("Encontrar minhas músicas")
                         }
                     } else if (tracks.isEmpty()) {
-                        Text("Nenhuma música encontrada. Baixe arquivos de áudio ou atualize a biblioteca.", color = Color(0xFFB7C6D8), fontSize = 13.sp)
+                        Text("Nenhuma música local encontrada. Adicione arquivos de áudio ao dispositivo e atualize a biblioteca.", color = Color(0xFFB7C6D8), fontSize = 13.sp)
                     } else {
-                        Text("${tracks.size} faixa(s) encontrada(s)", color = NebulaCyan, fontSize = 11.sp)
+                        Text("${tracks.size} música(s) importada(s)", color = NebulaCyan, fontSize = 11.sp)
                         Spacer(Modifier.height(8.dp))
                         LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             items(tracks) { track ->
