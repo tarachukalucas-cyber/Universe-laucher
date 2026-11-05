@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.session.MediaController
@@ -194,6 +195,8 @@ private fun UniverseHome(
     isPlaying: Boolean,
     onTogglePlayback: () -> Unit
 ) {
+    var selectedTab by remember { mutableStateOf("INÍCIO") }
+    val context = LocalContext.current
     Box(
         Modifier.fillMaxSize().background(
             Brush.verticalGradient(listOf(SpaceBlack, Color(0xFF0A1728), Color(0xFF090B18)))
@@ -207,7 +210,20 @@ private fun UniverseHome(
                 }
                 Icon(Icons.Default.GraphicEq, contentDescription = "Universe Music", tint = NebulaCyan)
             }
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(18.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("INÍCIO", "MODS", "MÚSICA").forEach { tab ->
+                    TextButton(onClick = { selectedTab = tab }) {
+                        Text(tab, color = if (selectedTab == tab) Color(0xFFFF8CEB) else Color(0xFFB7A0D5))
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            if (selectedTab == "MODS") {
+                Card(colors = CardDefaults.cardColors(containerColor = Color(0xEE160F24)), shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth().weight(1f)) {
+                    UniverseModsHub(File(context.filesDir, "mods"))
+                }
+            } else if (selectedTab == "INÍCIO") {
             Text("Sua aventura começa aqui.", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.Bold)
             Text("Launcher espacial para Minecraft Java.", color = Color(0xFFB7C6D8), fontSize = 13.sp)
             Spacer(Modifier.height(24.dp))
@@ -271,7 +287,8 @@ private fun UniverseHome(
                 }
                 Spacer(Modifier.height(8.dp))
             }
-            Text("UNIVERSE LAUNCHER • ALPHA 0.2.0", color = Color(0xFF8294A9), fontSize = 9.sp, letterSpacing = 1.5.sp)
+            }
+            Text("UNIVERSE LAUNCHER • ALPHA 0.3.0", color = Color(0xFFB89CE8), fontSize = 9.sp, letterSpacing = 1.5.sp)
         }
     }
 }
