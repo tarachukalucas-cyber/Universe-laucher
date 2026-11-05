@@ -223,7 +223,7 @@ private fun UniverseHome(
                 Card(colors = CardDefaults.cardColors(containerColor = Color(0xEE160F24)), shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth().weight(1f)) {
                     UniverseModsHub(File(context.filesDir, "mods"))
                 }
-            } else if (selectedTab == "INÍCIO") {
+            } else {
             Text("Sua aventura começa aqui.", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.Bold)
             Text("Launcher espacial para Minecraft Java.", color = Color(0xFFB7C6D8), fontSize = 13.sp)
             Spacer(Modifier.height(24.dp))
