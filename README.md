@@ -1,154 +1,70 @@
-<div align="center">
+# Universe Launcher
 
-# ❄️ Cryogenic Launcher
+Independent Android launcher project for Minecraft: Java Edition, with a custom Universe identity.
 
-### A modern, futuristic and gamer-focused Minecraft launcher experience for Android.
+> **Development status: engine integration in progress.** The original Compose/audio foundation remains available. A separate CI workflow now builds a pinned upstream Minecraft Java launcher engine as an ARM64 debug APK, branded as Universe Launcher. This is an integration build, not yet a merged or device-tested release.
 
-**Release:** `r1.0.0` · **Platform:** Android · **Package architecture:** `arm64-v8a`
+## Project identity
 
-[RussoViller WebPage](https://russoviller.github.io/RussoViller-WebPage/index.html#inicio)
+- Name: Universe Launcher
+- Platform: Android
+- Application identity for the original foundation: `com.universe.launcher`
+- Visual direction: space black, nebula blue/cyan and violet
+- Current integration target: ARM64 Android devices
 
-</div>
+## Existing Universe foundation
 
----
+- Kotlin and Jetpack Compose app foundation.
+- Custom Universe home screen and visual identity.
+- Local audio discovery through Android MediaStore.
+- Background audio playback using AndroidX Media3.
+- Separate debug APK workflow for the original foundation.
 
-## About
+## Minecraft Java engine integration
 
-**Cryogenic Launcher** is an Android launcher project developed under the **RussoViller** identity. It aims to bring Minecraft: Java Edition-related features together in a modern interface with its own visual personality, inspired by ice, futuristic technology and gaming aesthetics.
+The new workflow `.github/workflows/minecraft-engine.yml` checks out a **pinned** revision of [Zalith Launcher 2](https://github.com/ZalithLauncher/ZalithLauncher2) and builds its Android launcher module for ARM64. Zalith Launcher 2 documents that it uses the PojavLauncher engine and includes the Java runtime, Minecraft launching, Microsoft account flow and version management components.
 
-Its visual identity combines dark panels, translucent surfaces, glowing outlines, and shades of ice blue, cyan and turquoise. The goal is to create the feeling of a futuristic, frozen system while keeping navigation and features organized.
+- Upstream revision: `9546e84b5174cef6d7062322fb33ed442bac3b90`
+- Build task: `:ZalithLauncher:assembleDebug`
+- Output: GitHub Actions artifact `UniverseLauncher-MinecraftJava-arm64-debug`
+- Branding values: Universe Launcher, app label includes “Unofficial Modified Version”.
+- Gradle: 9.5.0; Java 17; Android NDK 25.2.9519653.
 
-> **Cryogenic Launcher is an independent, unofficial project.** It is not an official Zalith Launcher 2 product, is not endorsed by the Zalith Launcher 2 developers, and must not be represented as the original project.
+**Authentication configuration:** Microsoft sign-in depends on an OAuth application/client ID. The workflow reads the optional GitHub Actions secret `MICROSOFT_OAUTH_CLIENT_ID`. Without a valid client ID and matching provider configuration, Microsoft online sign-in is not ready, even if the launcher UI and authentication code compile. Never put account passwords or access tokens in source code or GitHub commits.
 
-## ✨ Features
+**What this integration does not claim yet:** the upstream engine build is not the same as a fully merged Universe application. The original Universe home screen, local music UI, custom branding assets and in-game music controls have not yet been ported into the engine application. The produced APK must be installed and tested on a real ARM64 Android device before it can be called release-ready.
 
-- **Frozen futuristic interface:** a custom visual direction featuring cool colors, translucent panels and luminous details.
-- **Gamer-oriented experience:** organized navigation and interface elements designed with Minecraft players in mind.
-- **Account management:** a dedicated area to view and manage accounts added to the launcher.
-- **Skin management:** character previews, saved skins and related customization options, subject to the integrations available in the release.
-- **Download center:** dedicated sections for Mods, Shaders, ModPacks, Textures, Worlds and other Minecraft-related content.
-- **Virtual cursor customization:** cursor style options and guidance for selecting images and configuring cursor behavior.
-- **Integrated RV WebPage:** access to the project's website through an area inside the launcher.
-- **File manager:** navigation through launcher directories and files.
-- **Settings:** a central area for application options and visual customization.
+## License and upstream notices
 
-*Feature availability may depend on the app version, internet access, Android permissions and external services.*
+Zalith Launcher 2 is licensed under GPL-3.0 and includes additional conditions under GPLv3 §7. Modified distributions must use a clearly distinct name, must not include “ZalithLauncher” or “ZL” in their name, must visibly identify themselves as an unofficial modified version on the startup/main screen, and must preserve copyright notices. Its source and license remain available at the upstream repository linked above.
 
-## 🧊 Visual identity
+The integration workflow pins upstream source rather than copying its implementation into this repository. Any future distribution of a combined modified work must include the corresponding complete source and all applicable license notices and comply with the upstream additional terms. Universe Launcher is not affiliated with or endorsed by Mojang or Microsoft.
 
-Cryogenic Launcher was designed around a recognizable visual language:
+Other references:
+- [Cubiq Launcher](https://github.com/VivxKumar07/Cubiq-Launcher)
+- [Amethyst Android](https://github.com/AngelAuraMC/Amethyst-Android)
 
-| Element | Visual direction |
-|---|---|
-| Colors | Ice blue, cyan, turquoise and deep navy |
-| Surfaces | Dark, translucent and rounded panels |
-| Highlights | Glowing borders and gradient accents |
-| Atmosphere | Futuristic, technological, icy and gamer-oriented |
-| Navigation | Organized side navigation and content panels |
+## Build the original Universe foundation
 
-## 🖥️ Interface sections
+```bash
+gradle :app:assembleDebug
+```
 
-### Accounts and customization
+Expected output: `app/build/outputs/apk/debug/app-debug.apk`.
 
-The Accounts screen displays the connected account, its status and account-management actions. The wardrobe view includes a character preview, saved skins and customization options.
+## Run the Minecraft engine integration build
 
-### Download center
+Open GitHub Actions in this repository and run **Universe Minecraft engine APK**, or push changes to `feat/minecraft-engine-zalith-integration`. The workflow uploads an ARM64 debug APK artifact. It does not publish a release automatically.
 
-The download interface organizes content into categories such as:
+## Remaining integration work
 
-- Mods
-- Shaders
-- ModPacks
-- Textures
-- Worlds
-- Minecraft and related content
+1. Port the Universe home screen, theme and audio player into the engine app without removing upstream legal notices.
+2. Configure and test Microsoft OAuth using a properly registered client ID.
+3. Verify version discovery, download, installation, Java runtime selection and game launch on an ARM64 phone.
+4. Test graphics/renderers and device compatibility.
+5. Add in-game music controls and test audio/game lifecycle behavior.
+6. Publish only after a real-device test and a complete source/license bundle are available.
 
-It also includes filters and item information.
+## Disclaimer
 
-### Virtual mouse cursor
-
-The cursor settings screen provides different cursor styles, visual examples and instructions for choosing an image and setting its click point.
-
-### RV WebPage
-
-The launcher includes an integrated area for accessing the project website:
-
-**https://russoviller.github.io**
-
-### File manager
-
-The file manager displays launcher directories and allows navigation through files accessible within the permissions granted by Android.
-
-## 🧬 Base project and acknowledgements
-
-Cryogenic Launcher uses code from **[Zalith Launcher 2](https://github.com/ZalithLauncher/ZalithLauncher2)** as a development base.
-
-We acknowledge the original project and its contributors. Cryogenic Launcher does not claim exclusive authorship of inherited code, third-party libraries or components originating from other projects.
-
-At the same time, Cryogenic Launcher has its **own name, visual identity, presentation and customizations**. Its interface direction and overall presentation are distinct from the original project. It is an independent, unofficial modified project and is not affiliated with or endorsed by the Zalith Launcher 2 developers.
-
-The Zalith Launcher 2 repository identifies **GNU General Public License v3.0 (GPL-3.0)** as its license and includes additional conditions for modified versions. Accordingly:
-
-- Applicable copyright notices and license notices from the upstream project must be retained.
-- Portions derived from Zalith Launcher 2 that are covered by GPL-3.0 remain subject to that license.
-- When distributing a modified version covered by GPL-3.0, the corresponding source code must be made available as required by the license.
-- Cryogenic Launcher must be clearly identified as an unofficial modified version and must not imply that it is the official Zalith Launcher 2 project.
-
-**References:**
-- [Zalith Launcher 2 — official repository](https://github.com/ZalithLauncher/ZalithLauncher2)
-- [GNU GPL-3.0 — license text](https://www.gnu.org/licenses/gpl-3.0.html)
-
-## 📱 Release information
-
-| Item | Details |
-|---|---|
-| Application | Cryogenic Launcher |
-| Version | `r1.0.0` |
-| APK filename | `CryogenicLauncher-r1.0.0-arm64-v8a.apk` |
-| Package architecture | ARM64 (`arm64-v8a`) |
-| Platform | Android |
-| Project identity | RussoViller |
-| Website | [russoviller.github.io](https://russoviller.github.io) |
-
-This APK is built for ARM64 devices. Compatibility with a particular device also depends on the Android version and the application's requirements.
-
-## 📥 Installation
-
-1. Download the APK provided by the project maintainer.
-2. Open the APK file on your Android device.
-3. If Android asks for permission, allow installation from that source.
-4. Complete the installation and launch Cryogenic Launcher.
-
-Only install APK files from sources you trust.
-
-## ⚖️ Licensing
-
-Cryogenic Launcher includes third-party components and code based on Zalith Launcher 2. **A single proprietary license cannot replace the licenses that apply to those components.**
-
-- **Inherited or derivative code covered by GPL-3.0:** remains under GPL-3.0 and its applicable terms.
-- **Third-party libraries and components:** remain under their respective licenses.
-- **Original Cryogenic materials:** the name, branding, logo, original artwork, visual identity and original project materials are covered by `RVCLapk1.0.md` only to the extent that they are owned by this project and are not subject to another license.
-
-See [`RVCLapk1.0.md`](RVCLapk1.0.md) for the terms covering original Cryogenic materials.
-
-## ⚠️ Notices
-
-- Cryogenic Launcher is an independent and unofficial project.
-- Minecraft is a trademark of its respective owners. This project does not claim official affiliation with Mojang or Microsoft.
-- Zalith Launcher 2 is a third-party project. Its authorship and rights remain acknowledged.
-- Features relying on external services may change or become unavailable.
-- Do not publish passwords, access tokens or other private credentials in screenshots, logs or public posts.
-
----
-
-<div align="center">
-
-**Cryogenic Launcher r1.0.0**
-
-*Freeze the limits. Play beyond.*
-
-Developed under the **RussoViller** identity.
-
-[RussoViller WebPage](https://russoviller.github.io/RussoViller-WebPage/index.html#inicio)
-
-</div>
+Minecraft is a trademark of its respective owners. Universe Launcher is an independent, unofficial project and is not affiliated with or endorsed by Mojang or Microsoft.

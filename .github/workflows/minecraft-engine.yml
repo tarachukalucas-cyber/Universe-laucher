@@ -1,0 +1,76 @@
+name: Universe Minecraft engine APK
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/minecraft-engine-zalith-integration
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    steps:
+      - name: Checkout Universe integration
+        uses: actions/checkout@v4
+      - name: Checkout Minecraft Java engine source
+        uses: actions/checkout@v4
+        with:
+          repository: ZalithLauncher/ZalithLauncher2
+          ref: 9546e84b5174cef6d7062322fb33ed442bac3b90
+          path: engine/ZalithLauncher2
+          fetch-depth: 1
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android SDK packages
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --install "platforms;android-37.0" "build-tools;35.0.0" "ndk;25.2.9519653" "platform-tools"
+          # Android publishes API 37 as android-37.0; this pinned upstream revision
+          # requests minor API level 2, but its source does not require those extension APIs.
+          # Compile against the available API 37.0 platform for reproducible CI builds.
+          sed -i 's/minorApiLevel = 2/minorApiLevel = 0/' engine/ZalithLauncher2/ZalithLauncher/build.gradle.kts
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust Android targets
+        run: rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk --locked
+      - name: Configure Universe branding
+        working-directory: engine/ZalithLauncher2
+        env:
+          MICROSOFT_OAUTH_CLIENT_ID: ${{ secrets.MICROSOFT_OAUTH_CLIENT_ID }}
+        run: |
+          cat >> ZalithLauncher/gradle.properties <<EOF
+          launcher_name=UniverseLauncher
+          launcher_app_name=Universe Launcher — Unofficial Modified Version
+          launcher_short_name=UNV
+          url_home=https://github.com/tarachukalucas-cyber/Universe-laucher
+          launcher_version_code=200049
+          launcher_version_name=0.3.0-alpha
+          oauth_client_id=${MICROSOFT_OAUTH_CLIENT_ID}
+          EOF
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.5.0'
+      - name: Build Minecraft Java launcher
+        working-directory: engine/ZalithLauncher2
+        env:
+          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/25.2.9519653
+          ANDROID_NDK_ROOT: ${{ env.ANDROID_HOME }}/ndk/25.2.9519653
+        run: gradle :ZalithLauncher:assembleDebug -Parch=arm64
+      - name: Upload Universe APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: UniverseLauncher-MinecraftJava-arm64-debug
+          path: engine/ZalithLauncher2/ZalithLauncher/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
