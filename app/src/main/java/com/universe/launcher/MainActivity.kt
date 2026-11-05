@@ -41,10 +41,10 @@ import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import java.io.File
 
-private val SpaceBlack = Color(0xFF050812)
-private val NebulaBlue = Color(0xFF174B78)
-private val NebulaCyan = Color(0xFF42D6D0)
-private val NebulaViolet = Color(0xFF7653A6)
+private val SpaceBlack = Color(0xFF08040F)
+private val NebulaBlue = Color(0xFF3A1767)
+private val NebulaCyan = Color(0xFFD46BFF)
+private val NebulaViolet = Color(0xFF8B3DCE)
 
 data class LocalTrack(val title: String, val artist: String, val uri: Uri)
 
@@ -199,7 +199,7 @@ private fun UniverseHome(
     val context = LocalContext.current
     Box(
         Modifier.fillMaxSize().background(
-            Brush.verticalGradient(listOf(SpaceBlack, Color(0xFF0A1728), Color(0xFF090B18)))
+            Brush.verticalGradient(listOf(SpaceBlack, Color(0xFF140A24), Color(0xFF0A0612)))
         )
     ) {
         Column(Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 24.dp)) {
@@ -228,7 +228,7 @@ private fun UniverseHome(
             Text("Launcher espacial para Minecraft Java.", color = Color(0xFFB7C6D8), fontSize = 13.sp)
             Spacer(Modifier.height(24.dp))
             Card(
-                colors = CardDefaults.cardColors(containerColor = Color(0xCC101D30)),
+                colors = CardDefaults.cardColors(containerColor = Color(0xCC1A1028)),
                 shape = RoundedCornerShape(20.dp),
                 modifier = Modifier.fillMaxWidth().weight(1f)
             ) {
@@ -260,7 +260,7 @@ private fun UniverseHome(
                         LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             items(tracks) { track ->
                                 Row(
-                                    Modifier.fillMaxWidth().background(Color(0x8825364B), RoundedCornerShape(12.dp))
+                                    Modifier.fillMaxWidth().background(Color(0x882B1A3F), RoundedCornerShape(12.dp))
                                         .clickable { onPlay(track) }.padding(12.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
